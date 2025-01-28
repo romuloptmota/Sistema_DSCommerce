@@ -2,7 +2,6 @@ package com.devsuperior.dscommerce.controllers;
 
 import com.devsuperior.dscommerce.Services.ProductService;
 import com.devsuperior.dscommerce.dto.ProductDTO;
-import com.devsuperior.dscommerce.entities.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping(value = "/products")
@@ -51,7 +49,7 @@ public class ProductController {
 
     //DELETE
     @DeleteMapping(value = "/{id}")
-    public ResponseEntity<Void> update(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }

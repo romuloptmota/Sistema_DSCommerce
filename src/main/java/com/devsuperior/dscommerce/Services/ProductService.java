@@ -1,16 +1,19 @@
 package com.devsuperior.dscommerce.Services;
 
+import com.devsuperior.dscommerce.Services.exceptions.DataBaseExcepitions;
+import com.devsuperior.dscommerce.Services.exceptions.ResourseNotFoundExcepitions;
 import com.devsuperior.dscommerce.dto.ProductDTO;
 import com.devsuperior.dscommerce.entities.Product;
 import com.devsuperior.dscommerce.repositories.ProductRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProductService {
@@ -21,10 +24,9 @@ public class ProductService {
     //GET ONE
     @Transactional(readOnly = true)
     public ProductDTO findById(Long id) {
-        Optional<Product> result = repository.findById(id);
-        Product product = result.get();
-        ProductDTO dto = new ProductDTO(product);
-        return dto;
+        Product product = repository.findById(id).orElseThrow(
+                () ->new ResourseNotFoundExcepitions("Recurso não encontrado"));
+        return new ProductDTO(product);
     }
 
     //GET ALL
@@ -46,16 +48,29 @@ public class ProductService {
     //PUT
     @Transactional
     public ProductDTO update(Long id, ProductDTO dto) {
-        Product entity = repository.getReferenceById(id);
-        copyDtotoEntity(dto, entity);
-        entity = repository.save(entity);
-        return new ProductDTO(entity);
+        try {
+            Product entity = repository.getReferenceById(id);
+            copyDtotoEntity(dto, entity);
+            entity = repository.save(entity);
+            return new ProductDTO(entity);
+        }catch (EntityNotFoundException e) {
+            throw new ResourseNotFoundExcepitions("Recurso não encontrado");
+        }
+
     }
 
     //DELETE
-    @Transactional
+    @Transactional(propagation = Propagation.SUPPORTS) //propagation para DataIntegrityViolationException, pois h2
     public void delete(Long id) {
-        repository.deleteById(id);
+        if(!repository.existsById(id)) {
+            throw new ResourseNotFoundExcepitions("Recurso não encontrado");
+        }
+        try {
+            repository.deleteById(id);
+            //Caso tente apagar algum produto vinculado a algum pedido
+        }catch (DataIntegrityViolationException e) {
+            throw new DataBaseExcepitions("Falha na integridade referencial");
+        }
     }
 
     //AUX
